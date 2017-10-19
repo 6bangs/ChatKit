@@ -30,6 +30,7 @@ import com.stfalcon.chatkit.commons.models.IDialog;
  * Component for displaying list of dialogs
  */
 public class DialogsList extends RecyclerView {
+
     private DialogListStyle dialogStyle;
 
     public DialogsList(Context context) {
@@ -67,16 +68,30 @@ public class DialogsList extends RecyclerView {
     }
 
     /**
-     * Set adapter for DialogsList
-     * @param adapter Adapter. Must extend DialogsListAdapter
+     * Sets adapter for DialogsList
+     *
+     * @param adapter  Adapter. Must extend DialogsListAdapter
      * @param <DIALOG> Dialog model class
      */
-    public <DIALOG extends IDialog> void setAdapter(DialogsListAdapter<DIALOG> adapter) {
+    public <DIALOG extends IDialog>
+    void setAdapter(DialogsListAdapter<DIALOG> adapter) {
+        setAdapter(adapter, true);
+    }
+
+    /**
+     * Sets adapter for DialogsList
+     *
+     * @param adapter       Adapter. Must extend DialogsListAdapter
+     * @param reverseLayout weather to use reverse layout for layout manager.
+     * @param <DIALOG>      Dialog model class
+     */
+    public <DIALOG extends IDialog>
+    void setAdapter(DialogsListAdapter<DIALOG> adapter, boolean reverseLayout) {
         SimpleItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setSupportsChangeAnimations(false);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(),
-                LinearLayoutManager.VERTICAL, true);
+                LinearLayoutManager.VERTICAL, reverseLayout);
 
         setItemAnimator(itemAnimator);
         setLayoutManager(layoutManager);

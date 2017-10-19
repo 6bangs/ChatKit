@@ -113,8 +113,8 @@ When your models are ready to be used by adapter, you can simply add them to the
 
 * adapter.setItems(List<DIALOG> items) - replaces existing list with a new dialog list;
 * adapter.addItems(List<DIALOG> items) - adds a new dialog list to the end of the list;
-* adapter.addItem(DIALOG dialog) - adds a new dialog to the specified position;
-* adapter.addItem(int position, DIALOG dialog) - adds one dialog to the end of the list.
+* adapter.addItem(DIALOG dialog) - adds one dialog to the end of the list
+* adapter.addItem(int position, DIALOG dialog) -  adds a new dialog to the specified position.
 
 #### Updating dialogs
 If dialog has changed, you can update it by position in list by calling `adapter.updateItem(int position, DIALOG item)` or update it by dialog id by calling `adapter.updateItemById(DIALOG item)`
@@ -157,6 +157,30 @@ dialogsListAdapter.setOnDialogLongClickListener(new DialogsListAdapter.OnDialogL
 ## Make it look the way you want
 
 Certainly, initially defined appearance will not be suitable for everybody. And again, we have several options to solve this problem.
+
+#### Dates format
+By default, the date in the dialogs is specified in the `HH: mm` format , but this does not satisfy all requirements. For example, you need to display such common options as "Today", "Yesterday", "Last week" etc. To achieve this we have the `DateFormatter.Formatter` interface:
+```java
+@Override
+public String format(Date date) {
+   if (DateFormatter.isToday(date)) {
+       return DateFormatter.format(date, DateFormatter.Template.TIME);
+   } else if (DateFormatter.isYesterday(date)) {
+       return getString(R.string.date_header_yesterday);
+       …...
+   } else {
+       return DateFormatter.format(date, DateFormatter.Template.STRING_DAY_MONTH_YEAR);
+   }
+}
+```
+After creating it, you can pass it to adapter:
+```java
+dialogsAdapter.setDatesFormatter(this);
+```
+...and get this kind of result:
+<p align="center">
+<img src="../images/DIALOGS_DATES_FORMAT.png">
+</p>
 
 #### Styling via attributes
 

@@ -1,21 +1,23 @@
-[ ![Download](https://api.bintray.com/packages/troy379/maven/ChatKit/images/download.svg) ](https://bintray.com/troy379/maven/ChatKit/_latestVersion)
-
 # ChatKit for Android
+
+[ ![Download](https://api.bintray.com/packages/troy379/maven/ChatKit/images/download.svg) ](https://bintray.com/troy379/maven/ChatKit/_latestVersion)
 
 ChatKit is a library designed to simplify the development of UI for such a trivial task as chat. It has flexible possibilities for styling, customizing and data management
 
 <p align="center">
-<img src="images/HEADER.png">
+<img src="images/HEADER.jpg">
 </p>
 
 ### Features
 
 * Ready-to-use already styled solution for quick implementation;
+* Default and custom media messages;
 * Fully customizable layouts - setting styles out of the box (use your own colors, text appearances, drawables, selectors and sizes) or even create your own custom markup or/and holders for unique behaviour;
 * List of dialogs, including tete-a-tete and group chats, markers for unread messages and last user message view;
 * List of messages (incoming and outcoming) with history pagination and already calculated dates headers;
 * Different avatars with no specific realization of image loading - you can use any library you want;
 * Selection mode for interacting with messages;
+* Links highlighting
 * Easy dates formatting;
 * Your own models for dialogs and messages - there is no converting needed;
 * Ready to use message input view;
@@ -23,6 +25,10 @@ ChatKit is a library designed to simplify the development of UI for such a trivi
 
 ### Who we are
 Need iOS and Android apps, MVP development or prototyping? Contact us via info@stfalcon.com. We develop software since 2009, and we're known experts in this field. Check out our [portfolio](https://stfalcon.com/en/portfolio) and see more libraries from [stfalcon-studio](https://stfalcon-studio.github.io/).
+
+## Demo Application
+
+[![Get it on Google Play](https://play.google.com/intl/en_us/badges/images/badge_new.png)](https://play.google.com/store/apps/details?id=com.stfalcon.chatkit.sample)
 
 ### How to use
 
@@ -37,7 +43,7 @@ To implement all of the features above you can use the following components:
 
 Download via Gradle:
 ```gradle
-compile 'com.github.stfalcon:chatkit:0.1.2'
+compile 'com.github.stfalcon:chatkit:0.2.2'
 ```
 
 or Maven:
@@ -45,7 +51,7 @@ or Maven:
 <dependency>
   <groupId>com.github.stfalcon</groupId>
   <artifactId>chatkit</artifactId>
-  <version>0.1.2</version>
+  <version>0.2.2</version>
   <type>pom</type>
 </dependency>
 ```
@@ -54,7 +60,7 @@ or Maven:
 
 Check out the [sample project](/sample/src/main) to try it yourself! :wink:
 
-### Change log
+### Changelog
 [See the changelog](docs/CHANGELOG.md) to be aware of latest improvements and fixes.
 
 ### Gratitude

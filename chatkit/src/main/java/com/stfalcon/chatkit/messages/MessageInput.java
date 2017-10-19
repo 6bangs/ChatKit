@@ -18,6 +18,8 @@ package com.stfalcon.chatkit.messages;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.Space;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -36,15 +38,18 @@ import java.lang.reflect.Field;
 /**
  * Component for input outcoming messages
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class MessageInput extends RelativeLayout
         implements View.OnClickListener, TextWatcher {
 
     protected EditText messageInput;
     protected ImageButton messageSendButton;
-    protected Space buttonSpace;
+    protected ImageButton attachmentButton;
+    protected Space sendButtonSpace, attachmentButtonSpace;
 
     private CharSequence input;
     private InputListener inputListener;
+    private AttachmentsListener attachmentsListener;
 
     public MessageInput(Context context) {
         super(context);
@@ -62,12 +67,21 @@ public class MessageInput extends RelativeLayout
     }
 
     /**
-     * Set callback to be invoked when user entered his input
+     * Sets callback for 'submit' button.
      *
      * @param inputListener input callback
      */
     public void setInputListener(InputListener inputListener) {
         this.inputListener = inputListener;
+    }
+
+    /**
+     * Sets callback for 'add' button.
+     *
+     * @param attachmentsListener input callback
+     */
+    public void setAttachmentsListener(AttachmentsListener attachmentsListener) {
+        this.attachmentsListener = attachmentsListener;
     }
 
     /**
@@ -96,6 +110,8 @@ public class MessageInput extends RelativeLayout
             if (isSubmitted) {
                 messageInput.setText("");
             }
+        } else if (id == R.id.attachmentButton) {
+            onAddAttachments();
         }
     }
 
@@ -115,7 +131,7 @@ public class MessageInput extends RelativeLayout
      */
     @Override
     public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
+        //do nothing
     }
 
     /**
@@ -123,11 +139,15 @@ public class MessageInput extends RelativeLayout
      */
     @Override
     public void afterTextChanged(Editable editable) {
-
+        //do nothing
     }
 
     private boolean onSubmit() {
         return inputListener != null && inputListener.onSubmit(input);
+    }
+
+    private void onAddAttachments() {
+        if (attachmentsListener != null) attachmentsListener.onAddAttachments();
     }
 
     private void init(Context context, AttributeSet attrs) {
@@ -140,14 +160,23 @@ public class MessageInput extends RelativeLayout
         this.messageInput.setTextSize(TypedValue.COMPLEX_UNIT_PX, style.getInputTextSize());
         this.messageInput.setTextColor(style.getInputTextColor());
         this.messageInput.setHintTextColor(style.getInputHintColor());
-        this.messageInput.setBackground(style.getInputBackground());
+        ViewCompat.setBackground(this.messageInput, style.getInputBackground());
         setCursor(style.getInputCursorDrawable());
 
-        this.messageSendButton.setBackground(style.getInputButtonBackground());
+        this.attachmentButton.setVisibility(style.showAttachmentButton() ? VISIBLE : GONE);
+        this.attachmentButton.setImageDrawable(style.getAttachmentButtonIcon());
+        this.attachmentButton.getLayoutParams().width = style.getAttachmentButtonWidth();
+        this.attachmentButton.getLayoutParams().height = style.getAttachmentButtonHeight();
+        ViewCompat.setBackground(this.attachmentButton, style.getAttachmentButtonBackground());
+
+        this.attachmentButtonSpace.setVisibility(style.showAttachmentButton() ? VISIBLE : GONE);
+        this.attachmentButtonSpace.getLayoutParams().width = style.getAttachmentButtonMargin();
+
         this.messageSendButton.setImageDrawable(style.getInputButtonIcon());
         this.messageSendButton.getLayoutParams().width = style.getInputButtonWidth();
         this.messageSendButton.getLayoutParams().height = style.getInputButtonHeight();
-        this.buttonSpace.getLayoutParams().width = style.getInputButtonMargin();
+        ViewCompat.setBackground(messageSendButton, style.getInputButtonBackground());
+        this.sendButtonSpace.getLayoutParams().width = style.getInputButtonMargin();
 
         if (getPaddingLeft() == 0
                 && getPaddingRight() == 0
@@ -167,33 +196,63 @@ public class MessageInput extends RelativeLayout
 
         messageInput = (EditText) findViewById(R.id.messageInput);
         messageSendButton = (ImageButton) findViewById(R.id.messageSendButton);
-        buttonSpace = (Space) findViewById(R.id.buttonSpace);
+        attachmentButton = (ImageButton) findViewById(R.id.attachmentButton);
+        sendButtonSpace = (Space) findViewById(R.id.sendButtonSpace);
+        attachmentButtonSpace = (Space) findViewById(R.id.attachmentButtonSpace);
 
         messageSendButton.setOnClickListener(this);
+        attachmentButton.setOnClickListener(this);
         messageInput.addTextChangedListener(this);
         messageInput.setText("");
     }
 
     private void setCursor(Drawable drawable) {
+        if (drawable == null) return;
+
         try {
-            Field f = TextView.class.getDeclaredField("mCursorDrawableRes");
-            f.setAccessible(true);
-            f.set(this.messageInput, drawable);
-        } catch (Exception ignore) {
+            final Field drawableResField = TextView.class.getDeclaredField("mCursorDrawableRes");
+            drawableResField.setAccessible(true);
+
+            final Object drawableFieldOwner;
+            final Class<?> drawableFieldClass;
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                drawableFieldOwner = this.messageInput;
+                drawableFieldClass = TextView.class;
+            } else {
+                final Field editorField = TextView.class.getDeclaredField("mEditor");
+                editorField.setAccessible(true);
+                drawableFieldOwner = editorField.get(this.messageInput);
+                drawableFieldClass = drawableFieldOwner.getClass();
+            }
+            final Field drawableField = drawableFieldClass.getDeclaredField("mCursorDrawable");
+            drawableField.setAccessible(true);
+            drawableField.set(drawableFieldOwner, new Drawable[]{drawable, drawable});
+        } catch (Exception ignored) {
         }
     }
 
     /**
-     * Interface definition for a callback to be invoked when user entered his input
+     * Interface definition for a callback to be invoked when user pressed 'submit' button
      */
     public interface InputListener {
 
         /**
-         * Fires when user press send button.
+         * Fires when user presses 'send' button.
          *
          * @param input input entered by user
          * @return if input text is valid, you must return {@code true} and input will be cleared, otherwise return false.
          */
         boolean onSubmit(CharSequence input);
+    }
+
+    /**
+     * Interface definition for a callback to be invoked when user presses 'add' button
+     */
+    public interface AttachmentsListener {
+
+        /**
+         * Fires when user presses 'add' button.
+         */
+        void onAddAttachments();
     }
 }

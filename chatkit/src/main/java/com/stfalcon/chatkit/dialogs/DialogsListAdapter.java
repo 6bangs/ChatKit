@@ -1,4 +1,4 @@
-/*******************************************************************************
+/******************************************************************************
  * Copyright 2016 stfalcon.com
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
 
 package com.stfalcon.chatkit.dialogs;
 
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
@@ -36,6 +37,7 @@ import com.stfalcon.chatkit.utils.DateFormatter;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -45,6 +47,7 @@ import static android.view.View.VISIBLE;
 /**
  * Adapter for {@link DialogsList}
  */
+@SuppressWarnings("WeakerAccess")
 public class DialogsListAdapter<DIALOG extends IDialog>
         extends RecyclerView.Adapter<DialogsListAdapter.BaseDialogViewHolder> {
 
@@ -53,8 +56,11 @@ public class DialogsListAdapter<DIALOG extends IDialog>
     private Class<? extends BaseDialogViewHolder> holderClass;
     private ImageLoader imageLoader;
     private OnDialogClickListener<DIALOG> onDialogClickListener;
+    private OnDialogViewClickListener<DIALOG> onDialogViewClickListener;
     private OnDialogLongClickListener<DIALOG> onLongItemClickListener;
+    private OnDialogViewLongClickListener<DIALOG> onDialogViewLongClickListener;
     private DialogListStyle dialogStyle;
+    private DateFormatter.Formatter datesFormatter;
 
     /**
      * For default list item layout and view holder
@@ -94,7 +100,10 @@ public class DialogsListAdapter<DIALOG extends IDialog>
     public void onBindViewHolder(BaseDialogViewHolder holder, int position) {
         holder.setImageLoader(imageLoader);
         holder.setOnDialogClickListener(onDialogClickListener);
+        holder.setOnDialogViewClickListener(onDialogViewClickListener);
         holder.setOnLongItemClickListener(onLongItemClickListener);
+        holder.setOnDialogViewLongClickListener(onDialogViewLongClickListener);
+        holder.setDatesFormatter(datesFormatter);
         holder.onBind(items.get(position));
     }
 
@@ -126,6 +135,7 @@ public class DialogsListAdapter<DIALOG extends IDialog>
 
     /**
      * remove item with id
+     *
      * @param id dialog i
      */
     public void deleteById(String id) {
@@ -135,6 +145,15 @@ public class DialogsListAdapter<DIALOG extends IDialog>
                 notifyItemRemoved(i);
             }
         }
+    }
+
+    /**
+     * Returns {@code true} if, and only if, dialogs count in adapter is non-zero.
+     *
+     * @return {@code true} if size is 0, otherwise {@code false}
+     */
+    public boolean isEmpty() {
+        return items.isEmpty();
     }
 
     /**
@@ -186,7 +205,7 @@ public class DialogsListAdapter<DIALOG extends IDialog>
     /**
      * Add dialog to dialogs list
      *
-     * @param dialog dialog item
+     * @param dialog   dialog item
      * @param position position in dialogs lost
      */
     public void addItem(int position, DIALOG dialog) {
@@ -233,6 +252,7 @@ public class DialogsListAdapter<DIALOG extends IDialog>
      * @param message  New message
      * @return false if dialog doesn't exist.
      */
+    @SuppressWarnings("unchecked")
     public boolean updateDialogWithMessage(String dialogId, IMessage message) {
         boolean dialogExist = false;
         for (int i = 0; i < items.size(); i++) {
@@ -248,6 +268,33 @@ public class DialogsListAdapter<DIALOG extends IDialog>
             }
         }
         return dialogExist;
+    }
+
+    /**
+     * Sort dialog by last message date
+     */
+    public void sortByLastMessageDate() {
+        Collections.sort(items, new Comparator<DIALOG>() {
+            @Override
+            public int compare(DIALOG o1, DIALOG o2) {
+                if (o1.getLastMessage().getCreatedAt().after(o2.getLastMessage().getCreatedAt())) {
+                    return -1;
+                } else if (o1.getLastMessage().getCreatedAt().before(o2.getLastMessage().getCreatedAt())) {
+                    return 1;
+                } else return 0;
+            }
+        });
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Sort items with rules of comparator
+     *
+     * @param comparator Comparator
+     */
+    public void sort(Comparator<DIALOG> comparator) {
+        Collections.sort(items, comparator);
+        notifyDataSetChanged();
     }
 
     /**
@@ -267,7 +314,7 @@ public class DialogsListAdapter<DIALOG extends IDialog>
     }
 
     /**
-     * @return the on click callback registered for this view.
+     * @return the item click callback.
      */
     public OnDialogClickListener getOnDialogClickListener() {
         return onDialogClickListener;
@@ -280,6 +327,22 @@ public class DialogsListAdapter<DIALOG extends IDialog>
      */
     public void setOnDialogClickListener(OnDialogClickListener<DIALOG> onDialogClickListener) {
         this.onDialogClickListener = onDialogClickListener;
+    }
+
+    /**
+     * @return the view click callback.
+     */
+    public OnDialogViewClickListener getOnDialogViewClickListener() {
+        return onDialogViewClickListener;
+    }
+
+    /**
+     * Register a callback to be invoked when dialog view is clicked.
+     *
+     * @param clickListener on click item callback
+     */
+    public void setOnDialogViewClickListener(OnDialogViewClickListener<DIALOG> clickListener) {
+        this.onDialogViewClickListener = clickListener;
     }
 
     /**
@@ -298,6 +361,29 @@ public class DialogsListAdapter<DIALOG extends IDialog>
         this.onLongItemClickListener = onLongItemClickListener;
     }
 
+    /**
+     * @return on view long click callback
+     */
+    public OnDialogViewLongClickListener<DIALOG> getOnDialogViewLongClickListener() {
+        return onDialogViewLongClickListener;
+    }
+
+    /**
+     * Register a callback to be invoked when item view is long clicked.
+     *
+     * @param clickListener on long click item callback
+     */
+    public void setOnDialogViewLongClickListener(OnDialogViewLongClickListener<DIALOG> clickListener) {
+        this.onDialogViewLongClickListener = clickListener;
+    }
+
+    /**
+     * Sets custom {@link DateFormatter.Formatter} for text representation of last message date.
+     */
+    public void setDatesFormatter(DateFormatter.Formatter datesFormatter) {
+        this.datesFormatter = datesFormatter;
+    }
+
     //TODO ability to set style programmatically
     void setStyle(DialogListStyle dialogStyle) {
         this.dialogStyle = dialogStyle;
@@ -310,17 +396,30 @@ public class DialogsListAdapter<DIALOG extends IDialog>
         void onDialogClick(DIALOG dialog);
     }
 
+    public interface OnDialogViewClickListener<DIALOG extends IDialog> {
+        void onDialogViewClick(View view, DIALOG dialog);
+    }
+
     public interface OnDialogLongClickListener<DIALOG extends IDialog> {
         void onDialogLongClick(DIALOG dialog);
+    }
+
+    public interface OnDialogViewLongClickListener<DIALOG extends IDialog> {
+        void onDialogViewLongClick(View view, DIALOG dialog);
     }
 
     /*
     * HOLDERS
     * */
-    public abstract static class BaseDialogViewHolder<DIALOG extends IDialog> extends ViewHolder<DIALOG> {
+    public abstract static class BaseDialogViewHolder<DIALOG extends IDialog>
+            extends ViewHolder<DIALOG> {
+
         protected ImageLoader imageLoader;
-        protected OnDialogClickListener onDialogClickListener;
-        protected OnDialogLongClickListener onLongItemClickListener;
+        protected OnDialogClickListener<DIALOG> onDialogClickListener;
+        protected OnDialogLongClickListener<DIALOG> onLongItemClickListener;
+        protected OnDialogViewClickListener<DIALOG> onDialogViewClickListener;
+        protected OnDialogViewLongClickListener<DIALOG> onDialogViewLongClickListener;
+        protected DateFormatter.Formatter datesFormatter;
 
         public BaseDialogViewHolder(View itemView) {
             super(itemView);
@@ -330,12 +429,24 @@ public class DialogsListAdapter<DIALOG extends IDialog>
             this.imageLoader = imageLoader;
         }
 
-        void setOnDialogClickListener(OnDialogClickListener onDialogClickListener) {
+        protected void setOnDialogClickListener(OnDialogClickListener<DIALOG> onDialogClickListener) {
             this.onDialogClickListener = onDialogClickListener;
         }
 
-        void setOnLongItemClickListener(OnDialogLongClickListener onLongItemClickListener) {
+        protected void setOnDialogViewClickListener(OnDialogViewClickListener<DIALOG> onDialogViewClickListener) {
+            this.onDialogViewClickListener = onDialogViewClickListener;
+        }
+
+        protected void setOnLongItemClickListener(OnDialogLongClickListener<DIALOG> onLongItemClickListener) {
             this.onLongItemClickListener = onLongItemClickListener;
+        }
+
+        protected void setOnDialogViewLongClickListener(OnDialogViewLongClickListener<DIALOG> onDialogViewLongClickListener) {
+            this.onDialogViewLongClickListener = onDialogViewLongClickListener;
+        }
+
+        public void setDatesFormatter(DateFormatter.Formatter dateHeadersFormatter) {
+            this.datesFormatter = dateHeadersFormatter;
         }
     }
 
@@ -370,58 +481,92 @@ public class DialogsListAdapter<DIALOG extends IDialog>
         private void applyStyle() {
             if (dialogStyle != null) {
                 //Texts
-                tvName.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogTitleTextSize());
-                tvLastMessage.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogMessageTextSize());
-                tvDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogDateSize());
+                if (tvName != null) {
+                    tvName.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogTitleTextSize());
+                }
+
+                if (tvLastMessage != null) {
+                    tvLastMessage.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogMessageTextSize());
+                }
+
+                if (tvDate != null) {
+                    tvDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogDateSize());
+                }
 
                 //Divider
-                divider.setBackgroundColor(dialogStyle.getDialogDividerColor());
-                dividerContainer.setPadding(dialogStyle.getDialogDividerLeftPadding(), 0,
-                        dialogStyle.getDialogDividerRightPadding(), 0);
+                if (divider != null)
+                    divider.setBackgroundColor(dialogStyle.getDialogDividerColor());
+                if (dividerContainer != null)
+                    dividerContainer.setPadding(dialogStyle.getDialogDividerLeftPadding(), 0,
+                            dialogStyle.getDialogDividerRightPadding(), 0);
                 //Avatar
-                ivAvatar.getLayoutParams().width = dialogStyle.getDialogAvatarWidth();
-                ivAvatar.getLayoutParams().height = dialogStyle.getDialogAvatarHeight();
+                if (ivAvatar != null) {
+                    ivAvatar.getLayoutParams().width = dialogStyle.getDialogAvatarWidth();
+                    ivAvatar.getLayoutParams().height = dialogStyle.getDialogAvatarHeight();
+                }
 
                 //Last message user avatar
-                ivLastMessageUser.getLayoutParams().width = dialogStyle.getDialogMessageAvatarWidth();
-                ivLastMessageUser.getLayoutParams().height = dialogStyle.getDialogMessageAvatarHeight();
+                if (ivLastMessageUser != null) {
+                    ivLastMessageUser.getLayoutParams().width = dialogStyle.getDialogMessageAvatarWidth();
+                    ivLastMessageUser.getLayoutParams().height = dialogStyle.getDialogMessageAvatarHeight();
+                }
 
                 //Unread bubble
-                GradientDrawable bgShape = (GradientDrawable) tvBubble.getBackground();
-                bgShape.setColor(dialogStyle.getDialogUnreadBubbleBackgroundColor());
-                tvBubble.setVisibility(dialogStyle.isDialogDividerEnabled() ? VISIBLE : GONE);
-                tvBubble.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogUnreadBubbleTextSize());
-                tvBubble.setTextColor(dialogStyle.getDialogUnreadBubbleTextColor());
-                tvBubble.setTypeface(tvBubble.getTypeface(), dialogStyle.getDialogUnreadBubbleTextStyle());
+                if (tvBubble != null) {
+                    GradientDrawable bgShape = (GradientDrawable) tvBubble.getBackground();
+                    bgShape.setColor(dialogStyle.getDialogUnreadBubbleBackgroundColor());
+                    tvBubble.setVisibility(dialogStyle.isDialogDividerEnabled() ? VISIBLE : GONE);
+                    tvBubble.setTextSize(TypedValue.COMPLEX_UNIT_PX, dialogStyle.getDialogUnreadBubbleTextSize());
+                    tvBubble.setTextColor(dialogStyle.getDialogUnreadBubbleTextColor());
+                    tvBubble.setTypeface(tvBubble.getTypeface(), dialogStyle.getDialogUnreadBubbleTextStyle());
+                }
             }
         }
 
 
         private void applyDefaultStyle() {
             if (dialogStyle != null) {
-                root.setBackgroundColor(dialogStyle.getDialogItemBackground());
-                tvName.setTextColor(dialogStyle.getDialogTitleTextColor());
-                tvName.setTypeface(tvName.getTypeface(), dialogStyle.getDialogTitleTextStyle());
+                if (root != null) {
+                    root.setBackgroundColor(dialogStyle.getDialogItemBackground());
+                }
 
-                tvDate.setTextColor(dialogStyle.getDialogDateColor());
-                tvDate.setTypeface(tvDate.getTypeface(), dialogStyle.getDialogDateStyle());
+                if (tvName != null) {
+                    tvName.setTextColor(dialogStyle.getDialogTitleTextColor());
+                    tvName.setTypeface(Typeface.DEFAULT, dialogStyle.getDialogTitleTextStyle());
+                }
 
-                tvLastMessage.setTextColor(dialogStyle.getDialogMessageTextColor());
-                tvLastMessage.setTypeface(tvLastMessage.getTypeface(), dialogStyle.getDialogMessageTextStyle());
+                if (tvDate != null) {
+                    tvDate.setTextColor(dialogStyle.getDialogDateColor());
+                    tvDate.setTypeface(Typeface.DEFAULT, dialogStyle.getDialogDateStyle());
+                }
+
+                if (tvLastMessage != null) {
+                    tvLastMessage.setTextColor(dialogStyle.getDialogMessageTextColor());
+                    tvLastMessage.setTypeface(Typeface.DEFAULT, dialogStyle.getDialogMessageTextStyle());
+                }
             }
         }
 
         private void applyUnreadStyle() {
             if (dialogStyle != null) {
-                root.setBackgroundColor(dialogStyle.getDialogUnreadItemBackground());
-                tvName.setTextColor(dialogStyle.getDialogUnreadTitleTextColor());
-                tvName.setTypeface(tvName.getTypeface(), dialogStyle.getDialogUnreadTitleTextStyle());
+                if (root != null) {
+                    root.setBackgroundColor(dialogStyle.getDialogUnreadItemBackground());
+                }
 
-                tvDate.setTextColor(dialogStyle.getDialogUnreadDateColor());
-                tvDate.setTypeface(tvDate.getTypeface(), dialogStyle.getDialogUnreadDateStyle());
+                if (tvName != null) {
+                    tvName.setTextColor(dialogStyle.getDialogUnreadTitleTextColor());
+                    tvName.setTypeface(Typeface.DEFAULT, dialogStyle.getDialogUnreadTitleTextStyle());
+                }
 
-                tvLastMessage.setTextColor(dialogStyle.getDialogUnreadMessageTextColor());
-                tvLastMessage.setTypeface(tvLastMessage.getTypeface(), dialogStyle.getDialogUnreadMessageTextStyle());
+                if (tvDate != null) {
+                    tvDate.setTextColor(dialogStyle.getDialogUnreadDateColor());
+                    tvDate.setTypeface(Typeface.DEFAULT, dialogStyle.getDialogUnreadDateStyle());
+                }
+
+                if (tvLastMessage != null) {
+                    tvLastMessage.setTextColor(dialogStyle.getDialogUnreadMessageTextColor());
+                    tvLastMessage.setTypeface(Typeface.DEFAULT, dialogStyle.getDialogUnreadMessageTextStyle());
+                }
             }
         }
 
@@ -438,7 +583,12 @@ public class DialogsListAdapter<DIALOG extends IDialog>
             tvName.setText(dialog.getDialogName());
 
             //Set Date
-            tvDate.setText(getDateString(dialog.getLastMessage().getCreatedAt()));
+            String formattedDate = null;
+            Date lastMessageDate = dialog.getLastMessage().getCreatedAt();
+            if (datesFormatter != null) formattedDate = datesFormatter.format(lastMessageDate);
+            tvDate.setText(formattedDate == null
+                    ? getDateString(lastMessageDate)
+                    : formattedDate);
 
             //Set Dialog avatar
             if (imageLoader != null) {
@@ -460,24 +610,31 @@ public class DialogsListAdapter<DIALOG extends IDialog>
             tvBubble.setVisibility(dialogStyle.isDialogUnreadBubbleEnabled() &&
                     dialog.getUnreadCount() > 0 ? VISIBLE : GONE);
 
-            if (onDialogClickListener != null) {
-                container.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
+            container.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (onDialogClickListener != null) {
                         onDialogClickListener.onDialogClick(dialog);
                     }
-                });
-            }
-
-            if (onLongItemClickListener != null) {
-                container.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View view) {
-                        onLongItemClickListener.onDialogLongClick(dialog);
-                        return true;
+                    if (onDialogViewClickListener != null) {
+                        onDialogViewClickListener.onDialogViewClick(view, dialog);
                     }
-                });
-            }
+                }
+            });
+
+
+            container.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    if (onLongItemClickListener != null) {
+                        onLongItemClickListener.onDialogLongClick(dialog);
+                    }
+                    if (onDialogViewLongClickListener != null) {
+                        onDialogViewLongClickListener.onDialogViewLongClick(view, dialog);
+                    }
+                    return onLongItemClickListener != null || onDialogViewLongClickListener != null;
+                }
+            });
         }
 
         protected String getDateString(Date date) {
