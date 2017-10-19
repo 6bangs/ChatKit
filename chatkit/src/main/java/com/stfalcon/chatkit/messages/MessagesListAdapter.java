@@ -855,7 +855,7 @@ public class MessagesListAdapter<MESSAGE extends IMessage>
      */
     @Deprecated
     public static class DefaultDateHeaderViewHolder extends ViewHolder<Date>
-            implements MessageHolders.DefaultMessageViewHolder {
+            implements MessageHolders.StyledMessageViewHolder {
 
         protected TextView text;
         protected String dateFormat;
@@ -895,7 +895,7 @@ public class MessagesListAdapter<MESSAGE extends IMessage>
     @Deprecated
     public static class IncomingMessageViewHolder<MESSAGE extends IMessage>
             extends MessageHolders.IncomingTextMessageViewHolder<MESSAGE>
-            implements MessageHolders.DefaultMessageViewHolder {
+            implements MessageHolders.StyledMessageViewHolder {
 
         public IncomingMessageViewHolder(View itemView) {
             super(itemView);

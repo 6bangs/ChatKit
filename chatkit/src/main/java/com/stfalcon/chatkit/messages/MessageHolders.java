@@ -407,8 +407,8 @@ public class MessageHolders {
             Constructor<HOLDER> constructor = holderClass.getDeclaredConstructor(View.class);
             constructor.setAccessible(true);
             HOLDER holder = constructor.newInstance(v);
-            if (holder instanceof DefaultMessageViewHolder && style != null) {
-                ((DefaultMessageViewHolder) holder).applyStyle(style);
+            if (holder instanceof StyledMessageViewHolder && style != null) {
+                ((StyledMessageViewHolder) holder).applyStyle(style);
             }
             return holder;
         } catch (Exception e) {
@@ -447,9 +447,12 @@ public class MessageHolders {
      * The base class for view holders for incoming and outcoming message.
      * You can extend it to create your own holder in conjuction with custom layout or even using default layout.
      */
-    public static abstract class BaseMessageViewHolder<MESSAGE extends IMessage> extends ViewHolder<MESSAGE> {
+    public abstract static class BaseMessageViewHolder<MESSAGE extends IMessage>
+            extends ViewHolder<MESSAGE> implements StyledMessageViewHolder {
 
         boolean isSelected;
+
+        protected ImageView userAvatar;
 
         /**
          * Callback for implementing images loading in message list
@@ -458,6 +461,7 @@ public class MessageHolders {
 
         public BaseMessageViewHolder(View itemView) {
             super(itemView);
+            userAvatar = (ImageView) itemView.findViewById(R.id.messageUserAvatar);
         }
 
         /**
@@ -500,6 +504,28 @@ public class MessageHolders {
                     return result;
                 }
             });
+        }
+
+        @Override
+        public void onBind(MESSAGE message) {
+            if (userAvatar != null) {
+                boolean isAvatarExists = imageLoader != null
+                        && message.getUser().getAvatar() != null
+                        && !message.getUser().getAvatar().isEmpty();
+
+                userAvatar.setVisibility(isAvatarExists ? View.VISIBLE : View.GONE);
+                if (isAvatarExists) {
+                    imageLoader.loadImage(userAvatar, message.getUser().getAvatar());
+                }
+            }
+        }
+
+        @Override
+        public void applyStyle(MessagesListStyle style) {
+            if (userAvatar != null) {
+                userAvatar.getLayoutParams().width = style.getIncomingAvatarWidth();
+                userAvatar.getLayoutParams().height = style.getIncomingAvatarHeight();
+            }
         }
 
     }
@@ -708,7 +734,7 @@ public class MessageHolders {
      * Default view holder implementation for date header
      */
     public static class DefaultDateHeaderViewHolder extends ViewHolder<Date>
-            implements DefaultMessageViewHolder {
+            implements StyledMessageViewHolder {
 
         protected TextView text;
         protected String dateFormat;
@@ -746,32 +772,19 @@ public class MessageHolders {
      * Base view holder for incoming message
      */
     public abstract static class BaseIncomingMessageViewHolder<MESSAGE extends IMessage>
-            extends BaseMessageViewHolder<MESSAGE> implements DefaultMessageViewHolder {
+            extends BaseMessageViewHolder<MESSAGE> {
 
         protected TextView time;
-        protected ImageView userAvatar;
 
         public BaseIncomingMessageViewHolder(View itemView) {
             super(itemView);
             time = (TextView) itemView.findViewById(R.id.messageTime);
-            userAvatar = (ImageView) itemView.findViewById(R.id.messageUserAvatar);
         }
 
         @Override
         public void onBind(MESSAGE message) {
             if (time != null) {
                 time.setText(DateFormatter.format(message.getCreatedAt(), DateFormatter.Template.TIME));
-            }
-
-            if (userAvatar != null) {
-                boolean isAvatarExists = imageLoader != null
-                        && message.getUser().getAvatar() != null
-                        && !message.getUser().getAvatar().isEmpty();
-
-                userAvatar.setVisibility(isAvatarExists ? View.VISIBLE : View.GONE);
-                if (isAvatarExists) {
-                    imageLoader.loadImage(userAvatar, message.getUser().getAvatar());
-                }
             }
         }
 
@@ -782,12 +795,6 @@ public class MessageHolders {
                 time.setTextSize(TypedValue.COMPLEX_UNIT_PX, style.getIncomingTimeTextSize());
                 time.setTypeface(time.getTypeface(), style.getIncomingTimeTextStyle());
             }
-
-            if (userAvatar != null) {
-                userAvatar.getLayoutParams().width = style.getIncomingAvatarWidth();
-                userAvatar.getLayoutParams().height = style.getIncomingAvatarHeight();
-            }
-
         }
     }
 
@@ -795,7 +802,7 @@ public class MessageHolders {
      * Base view holder for outcoming message
      */
     public abstract static class BaseOutcomingMessageViewHolder<MESSAGE extends IMessage>
-            extends BaseMessageViewHolder<MESSAGE> implements DefaultMessageViewHolder {
+            extends BaseMessageViewHolder<MESSAGE> implements StyledMessageViewHolder {
 
         protected TextView time;
 
@@ -821,13 +828,13 @@ public class MessageHolders {
         }
     }
 
-    /*
-    * DEFAULTS
-    * */
-
-    interface DefaultMessageViewHolder {
+    interface StyledMessageViewHolder {
         void applyStyle(MessagesListStyle style);
     }
+
+    /*
+     * DEFAULTS
+     */
 
     private static class DefaultIncomingTextMessageViewHolder
             extends IncomingTextMessageViewHolder<IMessage> {
